@@ -1,4 +1,4 @@
 version_check.ipynb
 end_sound.wav
 
-*.env
+model/
