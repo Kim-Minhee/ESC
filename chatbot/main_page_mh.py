@@ -23,100 +23,127 @@ def init_session_state():
 
 ### Streamlit ###
 ## 문진표
+def toggle_container():
+    st.session_state.container_visible = not st.session_state.container_visible
+
 def create_section_title(title):
-    col1, col2 = st.columns([1, 3])
+    col1, col2 = st.columns([1, 9])
     with col1:
         st.write(title)
     with col2:
         st.markdown('<hr style="margin: 12px 0px">', unsafe_allow_html=True)
 
 def create_medical_form():
-    st.header('문진표')
-    with st.container(border=False, height=450):
-        create_section_title('기본')
-        # 성별, 나이
-        col_gender, col_age = st.columns(2)
-        with col_gender:
-            gender = st.radio('**성별**', ['남', '여'], horizontal=True)
-        with col_age:
-            age = st.number_input('**나이 (만)**', value=30, min_value=0, max_value=150, step=1)
-        # 신장, 체중
-        col_height, col_weight = st.columns(2)
-        with col_height:
-            height = st.number_input('**신장 (cm)**', value=170.0, min_value=0.0, max_value=300.0, step=0.1, format='%.1f')
-        with col_weight:
-            weight = st.number_input('**체중 (kg)**', value=70.0, min_value=0.0, max_value=500.0, step=0.1, format='%.1f')
-        
-        create_section_title('질환력')
-        # 본인
-        conditions_self = st.multiselect('**본인**',
-            ['뇌졸중', '심근경색', '고혈압', '당뇨병', '폐질환', '기타(암 포함)'],
-            default=[])
-        # 가족
-        conditions_family = st.multiselect('**가족** (부모, 형제, 자매)',
-            ['뇌졸중', '심근경색', '고혈압', '당뇨병', '기타(암 포함)'],
-            default=[])
-        
-        create_section_title('생활')
-        # 흡연
-        with st.container(border=True):
-            smoking_status = st.radio('**흡연**', ['안 함', '함'], horizontal=True, key='smoking')
-            if smoking_status=='함':
-                st.markdown('<hr style="margin: -5px 0px">', unsafe_allow_html=True)
-                smoking_current = st.radio('현재 흡연 여부', ['현재도 흡연 중', '현재는 끊음'])
-                smoking_years = st.number_input('흡연 기간 (년)', value=3, min_value=0, max_value=150, step=1)
-                smoking_amount = st.number_input('1일 흡연량 (개비)', value=10, min_value=0, max_value=100, step=1)
-        # 음주
-        with st.container(border=True):
-            drinking_status = st.radio('**음주**', ['안 함', '함'], horizontal=True, key='drinking')
-            if drinking_status=='함':
-                st.markdown('<hr style="margin: -5px 0px">', unsafe_allow_html=True)
-                drinking_freq = st.number_input('한 달 평균 (회)', value=3, min_value=0, max_value=100, step=1)
-                drinking_type = st.selectbox('주종을 선택하세요.', ['소주', '맥주', '양주', '막걸리', '와인'])
-                drinking_amount = st.number_input('1회 음주량 (잔)', value=3, min_value=0, max_value=100, step=1)
-        # 운동
-        with st.container(border=True):
-            exercise_status = st.radio('**운동**', ['안 함', '함'], horizontal=True, key='exercise')
-            if exercise_status=='함':
-                exercise_freq = st.number_input('일주일 평균 (회)', value=3, min_value=0, max_value=20, step=1)
-                exercise_amount = st.number_input('1일 운동량 (분)', value=30, min_value=0, max_value=1000, step=1)
+    if 'container_visible' not in st.session_state: # 토글 기본값 -> 접기
+        st.session_state.container_visible = False
 
-    return {
-        'gender': gender,
-        'age': age,
-        'height': height,
-        'weight': weight,
-        'conditions_self': conditions_self,
-        'conditions_family': conditions_family,
-        'smoking': {
-            'status': smoking_status,
-            'details': {
-                'current': smoking_current if smoking_status=='함' else None,
-                'years': smoking_years if smoking_status=='함' else None,
-                'amount': smoking_amount if smoking_status=='함' else None
-            } if smoking_status=='함' else None
-        },
-        'drinking': {
-            'status': drinking_status,
-            'details': {
-                'frequency': drinking_freq if drinking_status=='함' else None,
-                'type': drinking_type if drinking_status=='함' else None,
-                'amount': drinking_amount if drinking_status=='함' else None
-            } if drinking_status=='함' else None
-        },
-        'exercise': {
-            'status': exercise_status,
-            'details': {
-                'frequency': exercise_freq if exercise_status=='함' else None,
-                'amount': exercise_amount if exercise_status=='함' else None
-            } if exercise_status=='함' else None
+    if 'form_data' not in st.session_state: # 문진표 기본값
+        st.session_state['form_data'] = {
+            'gender': '남',
+            'age': 30,
+            'height': 170.0,
+            'weight': 70.0,
+            'conditions_self': [],
+            'conditions_family': [],
+            'smoking': {
+                'status': '안 함',
+                'details': {
+                    'current': '현재도 흡연 중',
+                    'years': 3,
+                    'amount': 10
+                }
+            },
+            'drinking': {
+                'status': '안 함',
+                'details': {
+                    'frequency': 3,
+                    'type': '소주',
+                    'amount': 3
+                }
+            },
+            'exercise': {
+                'status': '안 함',
+                'details': {
+                    'frequency': 3,
+                    'amount': 30
+                }
+            }
         }
-    }
+        
+    st.markdown('#### 문진표')
+    if not st.session_state.container_visible:
+        if st.button('펼치기', key='open_button', on_click=toggle_container):
+            st.rerun()
+    else:
+        if st.button('접기', key='close_button', on_click=toggle_container):
+            st.rerun()
 
-## 이미지 업로드
-def create_image_upload():
-    st.header('파일 업로드')
-    uploaded_file = st.file_uploader('JPG 이미지를 업로드하세요.', type=['jpg'])
+    if st.session_state.container_visible:
+        with st.container(border=False):
+            col_basic, col_history = st.columns(2)
+            # 기본
+            with col_basic:
+                create_section_title('기본')
+                col_gender_age, col_height_weight = st.columns(2)
+                with col_gender_age:
+                    st.session_state['form_data']['gender'] = st.radio('**성별**', key='gender',
+                        options=['남', '여'], index=['남', '여'].index(st.session_state['form_data']['gender']), horizontal=True)
+                    st.session_state['form_data']['age'] = st.number_input('**나이 (만)**', key='age',
+                        value=st.session_state['form_data']['age'], min_value=0, max_value=150, step=1)
+                with col_height_weight:
+                    st.session_state['form_data']['height'] = st.number_input('**신장 (cm)**', key='height',
+                        value=st.session_state['form_data']['height'], min_value=0.0, max_value=300.0, step=0.1, format='%.1f')
+                    st.session_state['form_data']['weight'] = st.number_input('**체중 (kg)**', key='weight',
+                        value=st.session_state['form_data']['weight'], min_value=0.0, max_value=500.0, step=0.1, format='%.1f')
+
+            # 질환력  
+            with col_history:
+                create_section_title('질환력')
+                st.session_state['form_data']['conditions_self'] = st.multiselect(label='**본인**', key='conditions_self',
+                    options=['뇌졸중', '심근경색', '고혈압', '당뇨병', '폐질환', '기타(암 포함)'], default=st.session_state['form_data']['conditions_self'])
+                st.session_state['form_data']['conditions_family'] = st.multiselect(label='**가족** (부모, 형제, 자매)', key='conditions_family',
+                    options=['뇌졸중', '심근경색', '고혈압', '당뇨병', '기타(암 포함)'], default=st.session_state['form_data']['conditions_family'])
+            
+            # 생활
+            create_section_title('생활')
+            col_smoking, col_drinking, col_exercise = st.columns(3)
+            with col_smoking: # 흡연
+                with st.container(border=True):
+                    st.session_state['form_data']['smoking']['status'] = st.radio('**흡연**', key='smoking_status',
+                        options=['안 함', '함'], index=['안 함', '함'].index(st.session_state['form_data']['smoking']['status']), horizontal=True)
+                    if st.session_state['form_data']['smoking']['status']=='함':
+                        st.markdown('<hr style="margin: -5px 0px">', unsafe_allow_html=True)
+                        st.session_state['form_data']['smoking']['details']['current'] = st.radio('현재 흡연 여부', key='smoking_current',
+                            options=['현재도 흡연 중', '현재는 끊음'], index=['현재도 흡연 중', '현재는 끊음'].index(st.session_state['form_data']['smoking']['details']['current']))
+                        st.session_state['form_data']['smoking']['details']['years'] = st.number_input('흡연 기간 (년)', key='smoking_years',
+                            value=st.session_state['form_data']['smoking']['details']['years'], min_value=0, max_value=150, step=1)
+                        st.session_state['form_data']['smoking']['details']['amount'] = st.number_input('1일 흡연량 (개비)', key='smoking_amount',
+                            value=st.session_state['form_data']['smoking']['details']['amount'], min_value=0, max_value=100, step=1)
+            with col_drinking: # 음주
+                with st.container(border=True):
+                    st.session_state['form_data']['drinking']['status'] = st.radio('**음주**', key='drinking_status',
+                        options=['안 함', '함'], index=['안 함', '함'].index(st.session_state['form_data']['drinking']['status']), horizontal=True)
+                    if st.session_state['form_data']['drinking']['status']=='함':
+                        st.markdown('<hr style="margin: -5px 0px">', unsafe_allow_html=True)
+                        st.session_state['form_data']['drinking']['details']['frequency'] = st.number_input('한 달 평균 (회)', key='drinking_freq',
+                            value=st.session_state['form_data']['drinking']['details']['frequency'], min_value=0, max_value=100, step=1)
+                        st.session_state['form_data']['drinking']['details']['type'] = st.selectbox('주종을 선택하세요.', key='drinking_type',
+                            options=['소주', '맥주', '양주', '막걸리', '와인'])
+                        st.session_state['form_data']['drinking']['details']['amount'] = st.number_input('1회 음주량 (잔)', key='drinking_amount',
+                            value=3, min_value=0, max_value=100, step=1)
+            with col_exercise: # 운동
+                with st.container(border=True):
+                    st.session_state['form_data']['exercise']['status'] = st.radio('**운동**', key='exercise',
+                        options=['안 함', '함'], index=['안 함', '함'].index(st.session_state['form_data']['exercise']['status']), horizontal=True)
+                    if st.session_state['form_data']['exercise']['status']=='함':
+                        st.markdown('<hr style="margin: -5px 0px">', unsafe_allow_html=True)
+                        st.session_state['form_data']['exercise']['details']['frequency'] = st.number_input('일주일 평균 (회)', key='exercise_freq',
+                            value=st.session_state['form_data']['exercise']['details']['frequency'], min_value=0, max_value=20, step=1)
+                        st.session_state['form_data']['exercise']['details']['amount'] = st.number_input('1일 운동량 (분)', key='exercise_amount',
+                            value=st.session_state['form_data']['exercise']['details']['amount'], min_value=0, max_value=1000, step=1)
+        form_data = st.session_state["form_data"]
+    
+    return st.session_state['form_data']
 
 ## 메인
 def main():
@@ -128,32 +155,44 @@ def main():
 
     # 사이드바
     with st.sidebar:
-        # 문진표
-        medical_form_data = create_medical_form()
-
-        # 이미지 업로드
-        create_image_upload()
+        st.header('파일 업로드')
+        uploaded_file = st.file_uploader('**JPG** 이미지를 업로드하세요.', type=['jpg'])
     
     # 메인
     st.header('진단 보조 챗봇', divider='gray') # divider 옵션: blue, green, orange, red, violet, gray, grey, rainbow
     st.title('MEGA')
     
     # 소개/설명
+    with st.container(border=False):
+        col_intro, col_guide = st.columns(2)
+        with col_intro:
+            st.write('''
+            👋 안녕하세요! 진단 보조 챗봇 **메가**입니다.
+
+            문진표 작성과 이미지 파일을 업로드해주시면 초진기록지 작성을 도와드리겠습니다!
+            ''')
+        with col_guide:
+            st.write('''
+            💡 **사용 방법**
+            1. 하단의 **문진표**를 작성해주세요.
+            2. 진단이 필요한 **의료 이미지 파일**(.jpg)을 사이드바에 업로드해주세요.
+            3. 업로드가 완료되면 **초진기록지 초안**을 작성해드립니다.
+            ''')
+
+    # 문진표
     with st.container(border=True):
-        st.write('''
-        👋 안녕하세요! 진단 보조 챗봇 **메가**입니다.
+        medical_form_data = create_medical_form()
 
-        왼쪽 사이드바에서 문진표 작성과 이미지 파일을 업로드해주시면 초진기록지 작성을 도와드리겠습니다!
-
-        💡 **사용 방법**
-        1. 왼쪽 사이드바에서 간단한 **문진표**를 작성해주세요.
-        2. 진단이 필요한 **의료 이미지 파일**(.jpg)을 업로드해주세요.
-        3. 업로드가 완료되면 **초진기록지 초안**을 작성해드립니다.
-        ''')
-    if st.button('입력 데이터 확인'):
-        st.write(medical_form_data)
+    # 이미지 업로드 시
     if uploaded_file:
-        st.write(uploaded_file)
+        image = Image.open(uploaded_file)
+        col_image, col_result = st.columns([1, 2])
+        with col_image:
+            st.image(image, caption='분석 이미지', use_container_width=True)
+        with col_result:
+            with st.container(border=True):
+                st.subheader('82.7%의 확률로 갑상선암입니다.')
+                st.write('초진기록지 내용...')
 
     ## 챗봇 ##
     init_session_state()
