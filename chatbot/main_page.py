@@ -3,39 +3,29 @@ from dotenv import load_dotenv
 from PIL import Image
 
 import streamlit as st
+import tensorflow as tf
 import google.generativeai as genai
 # import google import genai
 
+import image_model as im
+
 
 ### Gemini ###
-# 모델 로드
 @st.cache_resource
 def load_gemini():
     genai.configure(api_key=os.getenv('GEMINI_API_KEY'))
-    model = genai.GenerativeModel('gemini-1.5-pro')
-    return model
-
-def init_session_state():
-    if 'messages' not in st.session_state:
-        st.session_state.messages = []
-
+    gemini = genai.GenerativeModel('gemini-1.5-pro')
+    return gemini
 
 
 ### Streamlit ###
-## 문진표
-def toggle_container():
-    st.session_state.container_visible = not st.session_state.container_visible
-
-def create_section_title(title):
-    col1, col2 = st.columns([1, 9])
-    with col1:
-        st.write(title)
-    with col2:
-        st.markdown('<hr style="margin: 12px 0px">', unsafe_allow_html=True)
-
-def create_medical_form():
+## Session
+def init_session_state():
+    if 'messages' not in st.session_state:
+        st.session_state.messages = []
+    
     if 'container_visible' not in st.session_state: # 토글 기본값 -> 접기
-        st.session_state.container_visible = False
+        st.session_state.container_visible = True
 
     if 'form_data' not in st.session_state: # 문진표 기본값
         st.session_state['form_data'] = {
@@ -69,7 +59,20 @@ def create_medical_form():
                 }
             }
         }
-        
+
+
+## 문진표
+def toggle_container():
+    st.session_state.container_visible = not st.session_state.container_visible
+
+def create_section_title(title):
+    col1, col2 = st.columns([1, 9])
+    with col1:
+        st.write(title)
+    with col2:
+        st.markdown('<hr style="margin: 12px 0px">', unsafe_allow_html=True)
+
+def create_medical_form():
     st.markdown('#### 문진표')
     if not st.session_state.container_visible:
         if st.button('펼치기', key='open_button', on_click=toggle_container):
@@ -119,6 +122,7 @@ def create_medical_form():
                             value=st.session_state['form_data']['smoking']['details']['years'], min_value=0, max_value=150, step=1)
                         st.session_state['form_data']['smoking']['details']['amount'] = st.number_input('1일 흡연량 (개비)', key='smoking_amount',
                             value=st.session_state['form_data']['smoking']['details']['amount'], min_value=0, max_value=100, step=1)
+            
             with col_drinking: # 음주
                 with st.container(border=True):
                     st.session_state['form_data']['drinking']['status'] = st.radio('**음주**', key='drinking_status',
@@ -131,6 +135,7 @@ def create_medical_form():
                             options=['소주', '맥주', '양주', '막걸리', '와인'])
                         st.session_state['form_data']['drinking']['details']['amount'] = st.number_input('1회 음주량 (잔)', key='drinking_amount',
                             value=3, min_value=0, max_value=100, step=1)
+            
             with col_exercise: # 운동
                 with st.container(border=True):
                     st.session_state['form_data']['exercise']['status'] = st.radio('**운동**', key='exercise',
@@ -141,9 +146,11 @@ def create_medical_form():
                             value=st.session_state['form_data']['exercise']['details']['frequency'], min_value=0, max_value=20, step=1)
                         st.session_state['form_data']['exercise']['details']['amount'] = st.number_input('1일 운동량 (분)', key='exercise_amount',
                             value=st.session_state['form_data']['exercise']['details']['amount'], min_value=0, max_value=1000, step=1)
-        form_data = st.session_state["form_data"]
+        
+        form_data = st.session_state['form_data']
     
     return st.session_state['form_data']
+
 
 ## 메인
 def main():
@@ -153,16 +160,18 @@ def main():
         #page_icon='', # 윈도우 창의 탭 아이콘 설정
     )
 
+    init_session_state()
+    model = im.load_model()
+    gemini = load_gemini()
+
     # 사이드바
     with st.sidebar:
         st.header('파일 업로드')
-        uploaded_file = st.file_uploader('**JPG** 이미지를 업로드하세요.', type=['jpg'])
-    
-    # 메인
-    st.header('진단 보조 챗봇', divider='gray') # divider 옵션: blue, green, orange, red, violet, gray, grey, rainbow
-    st.title('MEGA')
+        uploaded_file = st.file_uploader('**JPG** 이미지를 업로드하세요.', type=['jpg', 'bmp'])
     
     # 소개/설명
+    st.header('진단 보조 챗봇', divider='gray') # divider 옵션: blue, green, orange, red, violet, gray, grey, rainbow
+    st.title('MEGA')
     with st.container(border=False):
         col_intro, col_guide = st.columns(2)
         with col_intro:
@@ -186,17 +195,20 @@ def main():
     # 이미지 업로드 시
     if uploaded_file:
         image = Image.open(uploaded_file)
+        
+        prob, label = im.predict_image(image, model) # 예측
+
         col_image, col_result = st.columns([1, 2])
         with col_image:
-            st.image(image, caption='분석 이미지', use_container_width=True)
+            st.image(prep_image, caption='분석 이미지', use_container_width=True)
         with col_result:
             with st.container(border=True):
-                st.subheader('82.7%의 확률로 갑상선암입니다.')
+                st.subheader(f'{prob}%의 확률로 {label}입니다.')
                 st.write('초진기록지 내용...')
 
+    
     ## 챗봇 ##
-    init_session_state()
-    gemini = load_gemini()
+    
 
     # 메시지 기록
     for message in st.session_state.messages:
