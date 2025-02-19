@@ -2,8 +2,8 @@ code/
 data/
 model/
 
+chatbot/*.h5
 *.env
-*.h5
 
 version_check.ipynb
 end_sound.wav
