@@ -10,6 +10,11 @@ import google.generativeai as genai
 import image_model as im
 
 
+# @st.cache_resource
+# def load_classifier():
+#     model = tf.keras.models.load_model("model/250219_CNN_image_model.h5")
+#     return model
+
 ### Gemini ###
 @st.cache_resource
 def load_gemini():
@@ -162,6 +167,7 @@ def main():
 
     init_session_state()
     model = im.load_model()
+    # model = load_classifier()
     gemini = load_gemini()
 
     # 사이드바
@@ -200,7 +206,7 @@ def main():
 
         col_image, col_result = st.columns([1, 2])
         with col_image:
-            st.image(prep_image, caption='분석 이미지', use_container_width=True)
+            st.image(image, caption='분석 이미지', use_container_width=True)
         with col_result:
             with st.container(border=True):
                 st.subheader(f'{prob}%의 확률로 {label}입니다.')
