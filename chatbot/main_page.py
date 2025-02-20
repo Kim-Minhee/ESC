@@ -8,22 +8,10 @@ import google.generativeai as genai
 # import google import genai
 
 import image_model as im
+import assistant_mega as am
 
 
-# @st.cache_resource
-# def load_classifier():
-#     model = tf.keras.models.load_model("model/250219_CNN_image_model.h5")
-#     return model
 
-### Gemini ###
-@st.cache_resource
-def load_gemini():
-    genai.configure(api_key=os.getenv('GEMINI_API_KEY'))
-    gemini = genai.GenerativeModel('gemini-1.5-pro')
-    return gemini
-
-
-### Streamlit ###
 ## Session
 def init_session_state():
     if 'messages' not in st.session_state:
@@ -167,13 +155,12 @@ def main():
 
     init_session_state()
     model = im.load_model()
-    # model = load_classifier()
-    gemini = load_gemini()
+    gemini = am.load_gemini()
 
     # 사이드바
     with st.sidebar:
         st.header('파일 업로드')
-        uploaded_file = st.file_uploader('**JPG** 이미지를 업로드하세요.', type=['jpg', 'bmp'])
+        uploaded_file = st.file_uploader('**JPG/BMP** 이미지를 업로드하세요.', type=['jpg', 'bmp'])
     
     # 소개/설명
     st.header('진단 보조 챗봇', divider='gray') # divider 옵션: blue, green, orange, red, violet, gray, grey, rainbow
@@ -190,7 +177,7 @@ def main():
             st.write('''
             💡 **사용 방법**
             1. 하단의 **문진표**를 작성해주세요.
-            2. 진단이 필요한 **의료 이미지 파일**(.jpg)을 사이드바에 업로드해주세요.
+            2. 진단이 필요한 **의료 이미지 파일**(.jpg/.bmp)을 사이드바에 업로드해주세요.
             3. 업로드가 완료되면 **초진기록지 초안**을 작성해드립니다.
             ''')
 
@@ -201,16 +188,20 @@ def main():
     # 이미지 업로드 시
     if uploaded_file:
         image = Image.open(uploaded_file)
-        
-        prob, label = im.predict_image(image, model) # 예측
+
+        # 모델 예측
+        prob, label = im.predict_image(image, model)
+
+        # 초진기록지 초안
+        medical_record = am.generate_medical_record(gemini, st.session_state.form_data, prob, label)
 
         col_image, col_result = st.columns([1, 2])
         with col_image:
-            st.image(image, caption='분석 이미지', use_container_width=True)
+            st.image(image, caption='분석된 갑상선 초음파 이미지', use_container_width=True)
         with col_result:
             with st.container(border=True):
                 st.subheader(f'{prob}%의 확률로 {label}입니다.')
-                st.write('초진기록지 내용...')
+                st.write(medical_record)
 
     
     ## 챗봇 ##

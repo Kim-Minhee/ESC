@@ -5,9 +5,12 @@ from tensorflow.keras.applications import ConvNeXtTiny
 
 import cv2
 from PIL import Image
+import streamlit as st
 
 MODEL_PATH = 'model/250218_base-model_ep-30.h5'
+# MODEL_PATH = 'model/250218_augm-model_ep-50.h5'
 
+@st.cache_resource
 def load_model():
     conv_model = ConvNeXtTiny(
         include_top=False,
