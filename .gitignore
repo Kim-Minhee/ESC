@@ -1,10 +1,18 @@
+# Folders to ignore
 code/
 data/
 model/
 
+# Specific file formats to ignore
 chatbot/*.h5
 practice/*_MH.ipynb
 *.env
 
+# Specific files to ignore
 version_check.ipynb
 end_sound.wav
+
+# Python cache files
+__pycache__/
+*.pyc
+*.pyo
