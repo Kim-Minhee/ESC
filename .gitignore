@@ -3,6 +3,7 @@ data/
 model/
 
 chatbot/*.h5
+practice/*_MH.ipynb
 *.env
 
 version_check.ipynb
