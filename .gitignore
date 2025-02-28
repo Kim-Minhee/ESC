@@ -16,3 +16,4 @@ end_sound.wav
 __pycache__/
 *.pyc
 *.pyo
+*.pt
