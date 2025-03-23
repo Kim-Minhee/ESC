@@ -13,7 +13,11 @@ def load_gemini():
 
     return model
 
-def generate_medical_record(llm_model, form_data, prob, diagnosis_result):
+def generate_medical_record(llm_model, form_data, diagnosis_type, prob, diagnosis_result):
+    # 진단 종류
+    diag_type = '갑상선 암' if diagnosis_type==0 else '뇌 종양'
+    image_type = '초음파' if diagnosis_type==0 else 'MRI'
+
     # 환자 기본 정보 추출
     gender = form_data.get('gender', '정보 없음')
     age = form_data.get('age', '정보 없음')
@@ -30,7 +34,7 @@ def generate_medical_record(llm_model, form_data, prob, diagnosis_result):
     exercise_info = form_data.get('exercise', {})
     
     # 현재병력 구성
-    current_condition = "갑상선 종괴 의심으로 내원"
+    current_condition = f"{diag_type} 의심으로 내원"
     if conditions_self:
         current_condition += f". 환자는 {', '.join(conditions_self)}의 병력이 있음"
     
@@ -54,10 +58,10 @@ def generate_medical_record(llm_model, form_data, prob, diagnosis_result):
 
     # Gemini 프롬프트 작성
     prompt = f"""
-    당신은 대한민국 최고의 갑상선 전문의입니다.
-    환자의 기본 정보와 갑상선 초음파 이미지를 참고하여 초진기록지를 800자 이내로 작성해주세요.
+    당신은 대한민국 최고의 {diag_type} 전문의입니다.
+    환자의 기본 정보와 {diag_type} {image_type} 이미지를 참고하여 초진기록지를 800자 이내로 작성해주세요.
 
-    다음은 환자의 정보와 갑상선 초음파 이미지 진단 결과입니다:
+    다음은 환자의 정보와 {diag_type} {image_type} 이미지 진단 결과입니다:
     
     환자 정보:
     - 성별: {gender}
@@ -77,18 +81,18 @@ def generate_medical_record(llm_model, form_data, prob, diagnosis_result):
     - 음주: {drinking_status} {drinking_details}
     - 운동: {exercise_status} {exercise_details}
     
-    갑상선 초음파 영상 AI 진단 결과:
+    {diag_type} {image_type} 이미지 AI 진단 결과:
     - 진단: {diagnosis_result}
     - 신뢰도: {prob}%
     
-    이 정보를 바탕으로 갑상선 진료 초진기록지 초안을 작성해주세요. 다음 내용을 포함해야 합니다:
+    이 정보를 바탕으로 {diag_type} 진료 초진기록지 초안을 작성해주세요. 다음 내용을 포함해야 합니다:
     1. 주증상
     2. 현재병력
     3. 사회력
     4. 과거병력
     5. 가족력
     6. 환자 정보
-    7. 갑상선 초음파 영상 소견
+    7. {diag_type} {image_type} 이미지 소견
     8. 감별진단
     9. 진단계획
     
